@@ -13,6 +13,7 @@ services:
       MONGO_USERNAME: napp_user
       MONGO_PASSWORD: napp_pw
       MONGO_DBNAME: napps
+      TESTS: "/tests/test_e2e_40_sdntrace.py::TestE2ESDNTrace::test_002_run_sdntrace_cp"
       MONGO_HOST_SEEDS: "mongo1t:27027,mongo2t:27028,mongo3t:27029"
     depends_on:
       - mongo-setup

@@ -1041,3 +1041,69 @@ class TestE2ESDNTrace:
         assert data['type'] == 'last'
         assert data['out']['port'] == 1
         assert data['out']['vlan'] == 100
+
+    def test_002_run_sdntrace_cp(self):
+        """Run SDNTrace-CP (Control Plane)."""
+        # Trace from UNI_A
+        payload = {
+            "trace": {
+                "switch": {"dpid": "00:00:00:00:00:00:00:01", "in_port": 1},
+                "eth": {"dl_type": 33024, "dl_vlan": 400}
+            }
+        }
+        api_url = KYTOS_API + '/amlight/sdntrace_cp/v1/trace'
+        response = requests.put(api_url, json=payload)
+        assert response.status_code == 200, response.text
+        data = response.json()
+        assert "result" in data, data
+        assert len(data["result"]) == 10, data
+
+        expected = [
+            (
+                l['endpoint_b']['switch'],
+                l['endpoint_b']['port_number'],
+                l['metadata']['s_vlan']['value']
+            )
+            for l in self.circuit['current_path']
+        ]
+        expected.insert(0, ('00:00:00:00:00:00:00:01', 1, 400))
+
+        actual= [
+            (step['dpid'], step['port'], step['vlan'])
+            for step in data["result"]
+        ]
+        actual = list(reversed(actual))
+        assert expected == actual, f"Expected {expected}. Actual: {actual}"
+
+        # Trace from UNI_Z
+        payload = {
+            "trace": {
+                "switch": {"dpid": "00:00:00:00:00:00:00:0a", "in_port": 1},
+                "eth": {"dl_type": 33024, "dl_vlan": 400}
+            }
+        }
+        api_url = KYTOS_API + '/amlight/sdntrace_cp/v1/trace'
+        response = requests.put(api_url, json=payload)
+        assert response.status_code == 200, response.text
+        data = response.json()
+        assert "result" in data
+        assert len(data["result"]) == 10, data
+
+        expected = [
+            (
+                l['endpoint_a']['switch'],
+                l['endpoint_a']['port_number'],
+                l['metadata']['s_vlan']['value']
+            )
+            for l in reversed(self.circuit['current_path'])
+        ]
+        expected.insert(0, ('00:00:00:00:00:00:00:0a', 1, 400))
+
+        actual = [
+            (step['dpid'], step['port'], step['vlan'])
+            for step in data["result"]
+        ]
+        actual = list(reversed(actual))
+        assert expected == actual, f"Expected {expected}. Actual: {actual}"
+
+        
